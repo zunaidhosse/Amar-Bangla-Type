@@ -1,0 +1,21 @@
+{
+    "name": "বাংলা থেকে ফোনেটিক ইংলিশ অনুবাদক",
+    "short_name": "বাংলা অনুবাদক",
+    "description": "বাংলা টেক্সট থেকে ফোনেটিক ইংরেজিতে অনুবাদ করুন।",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f0f2f5",
+    "theme_color": "#3b82f6",
+    "icons": [
+        {
+            "src": "icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
