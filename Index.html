@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>বাংলা থেকে ফোনেটিক ইংলিশ অনুবাদক</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter for general text, Noto Sans Bengali for Bengali -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Bengali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Manifest Link for PWA - PWA ইনস্টলেশনের জন্য অপরিহার্য -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Font Awesome for Icons (Copy, Trash) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Body এর বেস স্টাইল */
+        body {
+            font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
+            background: linear-gradient(to right bottom, #edf2f7, #e2e8f0); /* হালকা গ্রেডিয়েন্ট ব্যাকগ্রাউন্ড */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1.5rem; /* রেসপনসিভ প্যাডিং */
+            box-sizing: border-box;
+            color: #333; /* গাঢ় ডিফল্ট টেক্সট রঙ */
+        }
+
+        /* প্রধান কন্টেইনার স্টাইলিং */
+        .container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* আরও গোলাকার কোণা */
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); /* শক্তিশালী, নরম ছায়া */
+            max-width: 650px; /* সামান্য প্রশস্ত */
+            width: 100%;
+            padding: 2.5rem; /* বর্ধিত প্যাডিং */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem; /* উপাদানগুলির মধ্যে বর্ধিত ব্যবধান */
+            position: relative; /* কপি মেসেজ পজিশন করার জন্য */
+        }
+
+        /* হেডিং এবং বর্ণনার স্টাইল */
+        h1 {
+            font-size: 2.5rem; /* বড় হেডিং */
+            font-weight: 700;
+            color: #2d3748; /* গাঢ় হেডিং রঙ */
+            margin-bottom: 0.5rem;
+        }
+        .description-text {
+            font-size: 1.15rem; /* সামান্য বড় বর্ণনা */
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        /* টেক্সট এরিয়া এবং ইনপুট ফিল্ডের সাধারণ স্টাইল */
+        textarea, input[type="text"] {
+            border: 1px solid #e2e8f0; /* হালকা বর্ডার */
+            border-radius: 0.75rem; /* সামান্য আরও গোলাকার */
+            padding: 1rem 1.25rem; /* আরও প্যাডিং */
+            width: 100%;
+            font-size: 1.1rem; /* সামান্য বড় ফন্ট */
+            transition: all 0.3s ease-in-out; /* সমস্ত প্রপার্টির জন্য মসৃণ ট্রানজিশন */
+            resize: vertical;
+            background-color: #f8fafc; /* ইনপুটের জন্য খুব হালকা ব্যাকগ্রাউন্ড */
+        }
+        textarea:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #4299e1; /* ফোকাসে উজ্জ্বল নীল */
+            box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.3); /* ফোকাসে নরম, প্রশস্ত ছায়া */
+            background-color: #ffffff; /* ফোকাসে সাদা ব্যাকগ্রাউন্ড */
+        }
+
+        /* বাটন স্টাইলিং */
+        button {
+            background: linear-gradient(to right, #4299e1, #3182ce); /* নীল গ্রেডিয়েন্ট */
+            color: white;
+            padding: 1rem 2rem; /* আরও প্যাডিং */
+            border-radius: 0.75rem; /* আরও গোলাকার */
+            font-size: 1.25rem; /* বড় ফন্ট */
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem; /* বর্ধিত ব্যবধান */
+            box-shadow: 0 5px 15px rgba(66, 153, 225, 0.3); /* বাটন শ্যাডো */
+        }
+        button:hover {
+            background: linear-gradient(to right, #3182ce, #2c5282); /* হোভারে গাঢ় গ্রেডিয়েন্ট */
+            transform: translateY(-2px); /* লিফট ইফেক্ট */
+            box-shadow: 0 8px 20px rgba(66, 153, 225, 0.4); /* হোভারে শক্তিশালী শ্যাডো */
+        }
+        button:active {
+            transform: translateY(0); /* প্রেস ইফেক্ট */
+            box-shadow: 0 3px 10px rgba(66, 153, 225, 0.2); /* সক্রিয় হলে ছোট শ্যাডো */
+        }
+        button.action-button {
+            background: #a0aec0; /* সেকেন্ডারি অ্যাকশনের জন্য সামান্য ভিন্ন রঙ */
+            box-shadow: 0 3px 10px rgba(160, 174, 192, 0.3);
+            font-size: 1rem;
+            padding: 0.75rem 1.25rem;
+        }
+        button.action-button:hover {
+            background: #718096;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(160, 174, 192, 0.4);
+        }
+
+        /* একাধিক বাটনের জন্য গ্রুপ */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap; /* ছোট স্ক্রিনে র্যাপ করার অনুমতি দিন */
+        }
+        .button-group button {
+            flex-grow: 1; /* বাটনগুলিকে বাড়তে এবং স্থান পূরণ করতে দিন */
+        }
+
+        /* লোডিং স্পিনার */
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-left-color: white;
+            border-radius: 50%;
+            width: 28px; /* সামান্য বড় স্পিনার */
+            height: 28px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* কপি বাটন সহ ফলাফল কন্টেইনার */
+        .result-container {
+            position: relative;
+            background-color: #fbfdff; /* আউটপুটের জন্য হালকা ব্যাকগ্রাউন্ড */
+            border: 1px solid #e2e8f0; /* ইনপুটের সাথে মিলিয়ে বর্ডার */
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: left;
+            min-height: 150px; /* আউটপুটের জন্য আরও স্থান */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05); /* সূক্ষ্ম অভ্যন্তরীণ ছায়া */
+            transition: all 0.3s ease-in-out;
+        }
+        .result-container p {
+            flex-grow: 1;
+            margin-bottom: 1.25rem; /* বাটনের জন্য আরও স্থান */
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            font-size: 1.15rem; /* সামঞ্জস্যপূর্ণ ফন্ট সাইজ */
+            color: #333;
+            line-height: 1.7;
+        }
+        .copy-button { /* কপি বাটনের স্টাইল */
+            position: absolute;
+            bottom: 15px; /* নিচ থেকে আরও দূরে */
+            right: 15px; /* ডান থেকে আরও দূরে */
+            background-color: #a0aec0; /* অ্যাকশন বাটনগুলির জন্য গ্রে-ব্লু */
+            color: white;
+            padding: 0.6rem 1.2rem; /* প্যাডিং সামঞ্জস্য করুন */
+            border-radius: 0.5rem;
+            font-size: 0.95rem; /* সামান্য বড় ফন্ট */
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.9;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .copy-button:hover {
+            background-color: #718096; /* গাঢ় গ্রে-ব্লু */
+            opacity: 1;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .copy-button:active {
+            transform: translateY(0);
+        }
+
+        /* কপি মেসেজ */
+        .copy-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85); /* গাঢ় ব্যাকগ্রাউন্ড */
+            color: white;
+            padding: 0.8rem 1.6rem; /* আরও প্যাডিং */
+            border-radius: 0.75rem; /* আরও গোলাকার */
+            font-size: 1.1rem; /* সামান্য বড় ফন্ট */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease-out, visibility 0.4s ease-out; /* ধীর ট্রানজিশন */
+            z-index: 100;
+            white-space: nowrap; /* টেক্সট র্যাপিং রোধ করুন */
+        }
+        .copy-message.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* API কী মডেল */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* গাঢ় ওভারলে */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000; /* উচ্চতর z-সূচক */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease-in-out, visibility 0.4s ease-in-out;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 2.5rem; /* আরও প্যাডিং */
+            border-radius: 1.5rem; /* আরও গোলাকার */
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.25); /* শক্তিশালী ছায়া */
+            width: 90%;
+            max-width: 480px; /* সামান্য প্রশস্ত */
+            text-align: center;
+            transform: translateY(-30px); /* গভীর প্রাথমিক অবস্থান */
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* স্প্রিংি ট্রানজিশন */
+        }
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-content h2 {
+            font-size: 1.8rem; /* বড় হেডিং */
+            font-weight: 700;
+            margin-bottom: 1.2rem;
+            color: #2d3748;
+        }
+        .modal-content p {
+            margin-bottom: 1.8rem; /* আরও স্থান */
+            color: #4a5568;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+        .modal-content input {
+            margin-bottom: 1.8rem; /* আরও স্থান */
+            padding: 0.9rem 1.1rem; /* প্যাডিং সামঞ্জস্য করুন */
+            font-size: 1.05rem; /* ফন্ট সাইজ সামঞ্জস্য করুন */
+        }
+        .error-message {
+            color: #e53e3e; /* লালচে এরর মেসেজ */
+            margin-top: -1rem; /* ইনপুট ফিল্ডের জন্য মার্জিন সামঞ্জস্য করুন */
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            display: none;
+            font-weight: 500;
+        }
+        .error-message.show {
+            display: block;
+        }
+
+        /* রেসপনসিভ অ্যাডজাস্টমেন্ট */
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            .container {
+                padding: 1.5rem;
+                border-radius: 1rem;
+                gap: 1.25rem;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .description-text {
+                font-size: 1rem;
+            }
+            textarea, input[type="text"] {
+                padding: 0.8rem 1rem;
+                font-size: 0.95rem;
+            }
+            button {
+                padding: 0.9rem 1.5rem;
+                font-size: 1.1rem;
+            }
+            .button-group button {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+            .result-container {
+                min-height: 120px;
+                padding: 1.25rem;
+            }
+            .result-container p {
+                font-size: 1rem;
+                margin-bottom: 1rem;
+            }
+            .copy-button {
+                bottom: 8px;
+                right: 8px;
+                padding: 0.4rem 0.7rem;
+                font-size: 0.85rem;
+                gap: 0.3rem;
+            }
+            .modal-content {
+                padding: 1.8rem;
+                border-radius: 1rem;
+            }
+            .modal-content h2 {
+                font-size: 1.5rem;
+            }
+            .modal-content p {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-gray-800">বাংলা থেকে ফোনেটিক ইংলিশ অনুবাদক</h1>
+        <p class="description-text text-gray-600">আপনার বাংলা টেক্সট নিচে লিখুন এবং ফোনেটিক ইংরেজিতে অনুবাদ করুন।</p>
+
+        <textarea id="inputText" class="shadow-sm" rows="5" placeholder="যেমন: আমি বাংলায় কথা বলি"></textarea>
+
+        <div class="button-group">
+            <button id="translateButton">
+                <span id="buttonText">অনুবাদ করুন</span>
+                <span class="loading-spinner" id="spinner"></span>
+            </button>
+            <button id="clearButton" class="action-button">
+                <i class="fas fa-trash-alt"></i> পরিষ্কার করুন
+            </button>
+        </div>
+
+        <div class="result-container">
+            <p id="translatedText">এখানে অনুবাদিত ফোনেটিক টেক্সট দেখাবে...</p>
+            <button id="copyButton" class="copy-button">
+                <i class="fas fa-copy"></i> কপি করুন
+            </button>
+            <div id="copyMessage" class="copy-message">কপি করা হয়েছে!</div>
+        </div>
+    </div>
+
+    <!-- API কী মডেল -->
+    <div id="apiKeyModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-gray-800">API কী প্রয়োজন</h2>
+            <p class="text-gray-600">অনুগ্রহ করে আপনার Google Gemini API কী এখানে দিন। এটি শুধুমাত্র একবার প্রয়োজন হবে।</p>
+            <input type="text" id="apiKeyInput" placeholder="আপনার API কী লিখুন...">
+            <p id="apiKeyError" class="error-message">API কী খালি রাখা যাবে না।</p>
+            <button id="saveApiKeyButton">API কী সংরক্ষণ করুন</button>
+        </div>
+    </div>
+
+    <script>
+        // PWA সার্ভিস ওয়ার্কার নিবন্ধন
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const currentProtocol = window.location.protocol;
+                // সার্ভিস ওয়ার্কারদের HTTPS অথবা localhost প্রোটোকলে সার্ভ করা প্রয়োজন।
+                // file:// অথবা blob:// প্রোটোকলে এটি সঠিকভাবে কাজ নাও করতে পারে।
+                if (currentProtocol === 'file:' || currentProtocol === 'blob:') {
+                    console.warn('সার্ভিস ওয়ার্কার সম্ভবত file:// অথবা blob:// প্রোটোকল ব্যবহার করার সময় সঠিকভাবে কাজ করবে না। সম্পূর্ণ PWA কার্যকারিতার জন্য অনুগ্রহ করে একটি ওয়েব সার্ভারে (যেমন GitHub Pages) স্থাপন করুন।');
+                }
+
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('সার্ভিস ওয়ার্কার নিবন্ধিত হয়েছে:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('সার্ভিস ওয়ার্কার নিবন্ধন ব্যর্থ হয়েছে:', error);
+                        console.error('বর্তমান প্রোটোকল:', currentProtocol);
+                        console.error('বর্তমান অরিজিন:', window.location.origin);
+                    });
+            });
+        }
+
+        const inputText = document.getElementById('inputText');
+        const translateButton = document.getElementById('translateButton');
+        const translatedText = document.getElementById('translatedText');
+        const spinner = document.getElementById('spinner');
+        const buttonText = document.getElementById('buttonText');
+        const copyButton = document.getElementById('copyButton');
+        const copyMessage = document.getElementById('copyMessage');
+        const clearButton = document.getElementById('clearButton'); // পরিষ্কার করুন বাটন
+
+        const apiKeyModal = document.getElementById('apiKeyModal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveApiKeyButton = document.getElementById('saveApiKeyButton');
+        const apiKeyError = document.getElementById('apiKeyError');
+
+        let geminiApiKey = localStorage.getItem('geminiApiKey');
+
+        // API কী মডেল দেখানো/লুকানোর ফাংশন
+        function showApiKeyModal() {
+            apiKeyModal.classList.add('show');
+            apiKeyInput.focus();
+        }
+
+        function hideApiKeyModal() {
+            apiKeyModal.classList.remove('show');
+            apiKeyError.classList.remove('show'); // বন্ধ করার সময় এরর লুকান
+        }
+
+        // লোড হওয়ার সময় API কী চেক করুন
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!geminiApiKey) {
+                showApiKeyModal();
+            }
+        });
+
+        // API কী সংরক্ষণ বাটন ক্লিক হ্যান্ডলার
+        saveApiKeyButton.addEventListener('click', () => {
+            const enteredKey = apiKeyInput.value.trim();
+            if (enteredKey) {
+                localStorage.setItem('geminiApiKey', enteredKey);
+                geminiApiKey = enteredKey;
+                hideApiKeyModal();
+            } else {
+                apiKeyError.classList.add('show');
+            }
+        });
+
+        // জেমিনি API কল করার ফাংশন
+        async function translateText(text) {
+            if (!geminiApiKey) {
+                showApiKeyModal();
+                translatedText.textContent = "অনুবাদের জন্য API কী প্রয়োজন।";
+                return;
+            }
+
+            // লোডিং স্পিনার দেখান এবং বাটনগুলি নিষ্ক্রিয় করুন
+            buttonText.style.display = 'none';
+            spinner.style.display = 'block';
+            translateButton.disabled = true;
+            clearButton.disabled = true; // অনুবাদের সময় পরিষ্কার বাটন নিষ্ক্রিয় করুন
+
+            translatedText.textContent = "অনুবাদ হচ্ছে...";
+            copyButton.style.display = 'none'; // অনুবাদের সময় কপি বাটন লুকান
+
+            // বাংলা থেকে ফোনেটিক ইংরেজিতে অনুবাদ করার প্রম্পট
+            const prompt = `Translate the following Bengali text into phonetic English (Romanized Bengali). Ensure the output is purely phonetic English, accurately reflecting the Bengali input. For example: "আমি বাংলায় কথা বলি" should be "Ami banglay kotha boli". "আমার সোনার বাংলা" should be "Amar sonar Bangla".`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: `${prompt} Input: '${text}'` }] });
+
+            const payload = { contents: chatHistory };
+            const apiKey = geminiApiKey; // সংরক্ষিত API কী ব্যবহার করুন
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('API ত্রুটি প্রতিক্রিয়া:', errorData);
+                    throw new Error(`API কল ব্যর্থ হয়েছে: ${response.status} ${response.statusText} - ${errorData.error?.message || 'অজানা ত্রুটি'}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    translatedText.textContent = text;
+                    copyButton.style.display = 'flex'; // সফল অনুবাদের পর কপি বাটন দেখান
+                } else {
+                    translatedText.textContent = "অনুবাদ করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
+                    console.error('API প্রতিক্রিয়া থেকে কোনো অনুবাদিত পাঠ্য পাওয়া যায়নি।', result);
+                    copyButton.style.display = 'none'; // অনুবাদ ব্যর্থ হলে কপি বাটন লুকানো রাখুন
+                }
+            } catch (error) {
+                console.error('অনুবাদ ত্রুটি:', error);
+                translatedText.textContent = `অনুবাদ ত্রুটি: ${error.message}`;
+                copyButton.style.display = 'none'; // ত্রুটিতে কপি বাটন লুকানো রাখুন
+            } finally {
+                // স্পিনার লুকান এবং বাটনগুলি সক্রিয় করুন
+                buttonText.style.display = 'block';
+                spinner.style.display = 'none';
+                translateButton.disabled = false;
+                clearButton.disabled = false; // পরিষ্কার বাটন পুনরায় সক্রিয় করুন
+            }
+        }
+
+        // অনুবাদ বাটন ইভেন্ট লিসেনার
+        translateButton.addEventListener('click', () => {
+            const text = inputText.value.trim();
+            if (text) {
+                translateText(text);
+            } else {
+                translatedText.textContent = "অনুবাদের জন্য কিছু লিখুন...";
+                copyButton.style.display = 'none'; // ইনপুট খালি হলে কপি বাটন লুকান
+            }
+        });
+
+        // কপি বাটন ইভেন্ট লিসেনার
+        copyButton.addEventListener('click', () => {
+            const textToCopy = translatedText.textContent;
+            if (textToCopy && textToCopy !== "এখানে অনুবাদিত ফোনেটিক টেক্সট দেখাবে..." && !textToCopy.startsWith("অনুবাদের জন্য")) {
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = textToCopy;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                document.execCommand('copy'); // ব্যাপক সামঞ্জস্যের জন্য execCommand ব্যবহার করুন
+                document.body.removeChild(tempTextArea);
+
+                // কপি নিশ্চিতকরণ বার্তা দেখান
+                copyMessage.classList.add('show');
+                setTimeout(() => {
+                    copyMessage.classList.remove('show');
+                }, 1500); // 1.5 সেকেন্ড পর লুকান
+            }
+        });
+
+        // পরিষ্কার বাটন ইভেন্ট লিসেনার
+        clearButton.addEventListener('click', () => {
+            inputText.value = '';
+            translatedText.textContent = "এখানে অনুবাদিত ফোনেটিক টেক্সট দেখাবে...";
+            copyButton.style.display = 'none';
+        });
+
+        // প্রাথমিক অবস্থা: কপি বাটন লুকানো
+        copyButton.style.display = 'none';
+
+        // "হোম স্ক্রিনে যোগ করুন" প্রম্পট (ঐচ্ছিক কিন্তু PWA ইনস্টল প্রম্পটের জন্য ভালো)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); // মোবাইলে ডিফল্ট মিনি-ইনফোবার দেখানো রোধ করুন
+            deferredPrompt = e; // ইভেন্টটি পরে ট্রিগার করার জন্য সংরক্ষণ করুন।
+            // এই মুহুর্তে, আপনি ব্যবহারকারীকে আপনার কাস্টম ইনস্টল বাটন/UI দেখাতে পারেন।
+            // উদাহরণস্বরূপ:
+            // const installAppButton = document.getElementById('installAppButton'); // আপনাকে আপনার HTML-এ এই বাটনটি যোগ করতে হবে
+            // if (installAppButton) {
+            //     installAppButton.style.display = 'block'; // আপনার কাস্টম ইনস্টল বাটন দৃশ্যমান করুন
+            //     installAppButton.addEventListener('click', () => {
+            //         if (deferredPrompt) {
+            //             deferredPrompt.prompt(); // ব্রাউজারের ইনস্টল প্রম্পট দেখান
+            //             deferredPrompt.userChoice.then((choiceResult) => {
+            //                 if (choiceResult.outcome === 'accepted') {
+            //                     console.log('ব্যবহারকারী A2HS প্রম্পট গ্রহণ করেছে');
+            //                 } else {
+            //                     console.log('ব্যবহারকারী A2HS প্রম্পট বাতিল করেছে');
+            //                 }
+            //                 deferredPrompt = null; // একবার ব্যবহার করার পর প্রম্পট পরিষ্কার করুন
+            //             });
+            //         }
+            //     });
+            // }
+            console.log('beforeinstallprompt ইভেন্ট ট্রিগার হয়েছে। আপনি এখন ব্যবহারকারীকে অ্যাপ ইনস্টল করার জন্য অনুরোধ করতে পারেন।');
+        });
+    </script>
+</body>
+</html>
