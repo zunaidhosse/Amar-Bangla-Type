@@ -9,7 +9,8 @@
     <!-- Google Fonts: Inter for general text, Noto Sans Bengali for Bengali -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Bengali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Manifest Link for PWA - PWA ইনস্টলেশনের জন্য অপরিহার্য -->
-    <link rel="manifest" href="manifest.json">
+    <!-- Manifest ফাইল লিঙ্ক আপডেট করা হয়েছে -->
+    <link rel="manifest" href="/AmarBangla/manifest.json">
     <!-- Font Awesome for Icons (Copy, Trash) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -55,7 +56,7 @@
             line-height: 1.6;
         }
 
-        /* টেক্সট এরিয়া এবং ইনপুট ফিল্ডের সাধারণ স্টাইল */
+        /* টেক্সট এরিয়া এবং ইনপুট ফিল্ডের সাধারণ স্টাইল */
         textarea, input[type="text"] {
             border: 1px solid #e2e8f0; /* হালকা বর্ডার */
             border-radius: 0.75rem; /* সামান্য আরও গোলাকার */
@@ -337,7 +338,7 @@
         <h1 class="text-gray-800">বাংলা থেকে ফোনেটিক ইংলিশ অনুবাদক</h1>
         <p class="description-text text-gray-600">আপনার বাংলা টেক্সট নিচে লিখুন এবং ফোনেটিক ইংরেজিতে অনুবাদ করুন।</p>
 
-        <textarea id="inputText" class="shadow-sm" rows="5" placeholder="যেমন: আমি বাংলায় কথা বলি"></textarea>
+        <textarea id="inputText" class="shadow-sm" rows="5" placeholder="যেমন: আমি বাংলায় কথা বলি"></textarea>
 
         <div class="button-group">
             <button id="translateButton">
@@ -380,7 +381,8 @@
                     console.warn('সার্ভিস ওয়ার্কার সম্ভবত file:// অথবা blob:// প্রোটোকল ব্যবহার করার সময় সঠিকভাবে কাজ করবে না। সম্পূর্ণ PWA কার্যকারিতার জন্য অনুগ্রহ করে একটি ওয়েব সার্ভারে (যেমন GitHub Pages) স্থাপন করুন।');
                 }
 
-                navigator.serviceWorker.register('/service-worker.js')
+                // সার্ভিস ওয়ার্কার রেজিস্ট্রেশন পাথটি আপডেট করা হয়েছে
+                navigator.serviceWorker.register('/AmarBangla/service-worker.js')
                     .then(registration => {
                         console.log('সার্ভিস ওয়ার্কার নিবন্ধিত হয়েছে:', registration.scope);
                     })
@@ -456,7 +458,7 @@
             copyButton.style.display = 'none'; // অনুবাদের সময় কপি বাটন লুকান
 
             // বাংলা থেকে ফোনেটিক ইংরেজিতে অনুবাদ করার প্রম্পট
-            const prompt = `Translate the following Bengali text into phonetic English (Romanized Bengali). Ensure the output is purely phonetic English, accurately reflecting the Bengali input. For example: "আমি বাংলায় কথা বলি" should be "Ami banglay kotha boli". "আমার সোনার বাংলা" should be "Amar sonar Bangla".`;
+            const prompt = `Translate the following Bengali text into phonetic English (Romanized Bengali). Ensure the output is purely phonetic English, accurately reflecting the Bengali input. For example: "আমি বাংলায় কথা বলি" should be "Ami banglay kotha boli". "আমার সোনার বাংলা" should be "Amar sonar Bangla".`;
 
             let chatHistory = [];
             chatHistory.push({ role: "user", parts: [{ text: `${prompt} Input: '${text}'` }] });
@@ -494,81 +496,92 @@
             } catch (error) {
                 console.error('অনুবাদ ত্রুটি:', error);
                 translatedText.textContent = `অনুবাদ ত্রুটি: ${error.message}`;
-                copyButton.style.display = 'none'; // ত্রুটিতে কপি বাটন লুকানো রাখুন
+                copyButton.style.display = 'none'; // ত্রুটির ক্ষেত্রে কপি বাটন লুকান
+                if (error.message.includes('API key not valid') || error.message.includes('invalid API key')) {
+                    showApiKeyModal();
+                }
             } finally {
-                // স্পিনার লুকান এবং বাটনগুলি সক্রিয় করুন
+                // লোডিং স্পিনার লুকান এবং বাটনগুলি সক্রিয় করুন
                 buttonText.style.display = 'block';
                 spinner.style.display = 'none';
                 translateButton.disabled = false;
-                clearButton.disabled = false; // পরিষ্কার বাটন পুনরায় সক্রিয় করুন
+                clearButton.disabled = false; // অনুবাদের পর পরিষ্কার বাটন সক্রিয় করুন
             }
         }
 
-        // অনুবাদ বাটন ইভেন্ট লিসেনার
+        // অনুবাদ বাটন ক্লিক হ্যান্ডলার
         translateButton.addEventListener('click', () => {
-            const text = inputText.value.trim();
-            if (text) {
-                translateText(text);
+            const textToTranslate = inputText.value.trim();
+            if (textToTranslate) {
+                translateText(textToTranslate);
             } else {
                 translatedText.textContent = "অনুবাদের জন্য কিছু লিখুন...";
-                copyButton.style.display = 'none'; // ইনপুট খালি হলে কপি বাটন লুকান
+                copyButton.style.display = 'none';
             }
         });
 
-        // কপি বাটন ইভেন্ট লিসেনার
+        // কপি বাটন ক্লিক হ্যান্ডলার
         copyButton.addEventListener('click', () => {
             const textToCopy = translatedText.textContent;
-            if (textToCopy && textToCopy !== "এখানে অনুবাদিত ফোনেটিক টেক্সট দেখাবে..." && !textToCopy.startsWith("অনুবাদের জন্য")) {
-                const tempTextArea = document.createElement('textarea');
-                tempTextArea.value = textToCopy;
-                document.body.appendChild(tempTextArea);
-                tempTextArea.select();
-                document.execCommand('copy'); // ব্যাপক সামঞ্জস্যের জন্য execCommand ব্যবহার করুন
-                document.body.removeChild(tempTextArea);
-
-                // কপি নিশ্চিতকরণ বার্তা দেখান
-                copyMessage.classList.add('show');
-                setTimeout(() => {
-                    copyMessage.classList.remove('show');
-                }, 1500); // 1.5 সেকেন্ড পর লুকান
+            if (textToCopy && textToCopy !== 'এখানে অনুবাদিত ফোনেটিক টেক্সট দেখাবে...' && textToCopy !== 'অনুবাদের জন্য কিছু লিখুন...' && !textToCopy.startsWith('অনুবাদ হচ্ছে...')) {
+                // Clipboard API ব্যবহার করুন (যদিও iframe এ সমস্যা হতে পারে, তবু এটি আধুনিক পদ্ধতি)
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        showCopyMessage();
+                    }).catch(err => {
+                        console.error('কপি করতে ব্যর্থ:', err);
+                        fallbackCopyTextToClipboard(textToCopy); // ফলব্যাক ব্যবহার করুন যদি ব্যর্থ হয়
+                    });
+                } else {
+                    // ফলব্যাক পদ্ধতি যদি Clipboard API উপলব্ধ না হয়
+                    fallbackCopyTextToClipboard(textToCopy);
+                }
             }
         });
 
-        // পরিষ্কার বাটন ইভেন্ট লিসেনার
+        // ফলব্যাক কপি ফাংশন (পুরাতন ব্রাউজার বা iframe-এর জন্য)
+        function fallbackCopyTextToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            // অফস্ক্রিন রাখুন
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showCopyMessage();
+            } catch (err) {
+                console.error('ফলব্যাক পদ্ধতি ব্যবহার করে কপি করতে ব্যর্থ:', err);
+            }
+            document.body.removeChild(textarea);
+        }
+
+
+        // কপি মেসেজ দেখান
+        function showCopyMessage() {
+            copyMessage.classList.add('show');
+            setTimeout(() => {
+                copyMessage.classList.remove('show');
+            }, 1500); // 1.5 সেকেন্ড পর মেসেজ লুকান
+        }
+
+        // পরিষ্কার বাটন ক্লিক হ্যান্ডলার
         clearButton.addEventListener('click', () => {
-            inputText.value = '';
-            translatedText.textContent = "এখানে অনুবাদিত ফোনেটিক টেক্সট দেখাবে...";
-            copyButton.style.display = 'none';
+            inputText.value = ''; // ইনপুট টেক্সট পরিষ্কার করুন
+            translatedText.textContent = 'এখানে অনুবাদিত ফোনেটিক টেক্সট দেখাবে...'; // অনুবাদিত টেক্সট রিসেট করুন
+            copyButton.style.display = 'none'; // কপি বাটন লুকান
+            copyMessage.classList.remove('show'); // যদি দেখানো থাকে, কপি মেসেজ লুকান
         });
 
-        // প্রাথমিক অবস্থা: কপি বাটন লুকানো
-        copyButton.style.display = 'none';
-
-        // "হোম স্ক্রিনে যোগ করুন" প্রম্পট (ঐচ্ছিক কিন্তু PWA ইনস্টল প্রম্পটের জন্য ভালো)
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); // মোবাইলে ডিফল্ট মিনি-ইনফোবার দেখানো রোধ করুন
-            deferredPrompt = e; // ইভেন্টটি পরে ট্রিগার করার জন্য সংরক্ষণ করুন।
-            // এই মুহুর্তে, আপনি ব্যবহারকারীকে আপনার কাস্টম ইনস্টল বাটন/UI দেখাতে পারেন।
-            // উদাহরণস্বরূপ:
-            // const installAppButton = document.getElementById('installAppButton'); // আপনাকে আপনার HTML-এ এই বাটনটি যোগ করতে হবে
-            // if (installAppButton) {
-            //     installAppButton.style.display = 'block'; // আপনার কাস্টম ইনস্টল বাটন দৃশ্যমান করুন
-            //     installAppButton.addEventListener('click', () => {
-            //         if (deferredPrompt) {
-            //             deferredPrompt.prompt(); // ব্রাউজারের ইনস্টল প্রম্পট দেখান
-            //             deferredPrompt.userChoice.then((choiceResult) => {
-            //                 if (choiceResult.outcome === 'accepted') {
-            //                     console.log('ব্যবহারকারী A2HS প্রম্পট গ্রহণ করেছে');
-            //                 } else {
-            //                     console.log('ব্যবহারকারী A2HS প্রম্পট বাতিল করেছে');
-            //                 }
-            //                 deferredPrompt = null; // একবার ব্যবহার করার পর প্রম্পট পরিষ্কার করুন
-            //             });
-            //         }
-            //     });
-            // }
-            console.log('beforeinstallprompt ইভেন্ট ট্রিগার হয়েছে। আপনি এখন ব্যবহারকারীকে অ্যাপ ইনস্টল করার জন্য অনুরোধ করতে পারেন।');
+        // এন্টার চাপলে অনুবাদ করার জন্য ইভেন্ট লিসেনার
+        inputText.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // নতুন লাইন যোগ করা থেকে বিরত থাকুন
+                translateButton.click(); // অনুবাদ বাটন ক্লিক করুন
+            }
         });
     </script>
 </body>
