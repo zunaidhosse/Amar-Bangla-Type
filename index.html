@@ -11,7 +11,7 @@
     <!-- Manifest Link for PWA - PWA ইনস্টলেশনের জন্য অপরিহার্য -->
     <!-- Manifest ফাইল লিঙ্ক আপডেট করা হয়েছে -->
     <link rel="manifest" href="/AmarBangla/manifest.json">
-    <!-- Font Awesome for Icons (Copy, Trash) -->
+    <!-- Font Awesome for Icons (Copy, Trash, Download) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Body এর বেস স্টাইল */
@@ -111,6 +111,18 @@
             transform: translateY(-1px);
             box-shadow: 0 5px 15px rgba(160, 174, 192, 0.4);
         }
+        /* ইনস্টল বাটন */
+        button#installButton {
+            background: linear-gradient(to right, #28a745, #218838); /* সবুজ গ্রেডিয়েন্ট */
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+            display: none; /* প্রাথমিকভাবে লুকানো থাকবে */
+        }
+        button#installButton:hover {
+            background: linear-gradient(to right, #218838, #1e7e34);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+        }
+
 
         /* একাধিক বাটনের জন্য গ্রুপ */
         .button-group {
@@ -348,6 +360,10 @@
             <button id="clearButton" class="action-button">
                 <i class="fas fa-trash-alt"></i> পরিষ্কার করুন
             </button>
+            <!-- নতুন ইনস্টল বাটন যোগ করা হয়েছে -->
+            <button id="installButton">
+                <i class="fas fa-download"></i> অ্যাপ ইনস্টল করুন
+            </button>
         </div>
 
         <div class="result-container">
@@ -375,13 +391,10 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const currentProtocol = window.location.protocol;
-                // সার্ভিস ওয়ার্কারদের HTTPS অথবা localhost প্রোটোকলে সার্ভ করা প্রয়োজন।
-                // file:// অথবা blob:// প্রোটোকলে এটি সঠিকভাবে কাজ নাও করতে পারে।
                 if (currentProtocol === 'file:' || currentProtocol === 'blob:') {
                     console.warn('সার্ভিস ওয়ার্কার সম্ভবত file:// অথবা blob:// প্রোটোকল ব্যবহার করার সময় সঠিকভাবে কাজ করবে না। সম্পূর্ণ PWA কার্যকারিতার জন্য অনুগ্রহ করে একটি ওয়েব সার্ভারে (যেমন GitHub Pages) স্থাপন করুন।');
                 }
 
-                // সার্ভিস ওয়ার্কার রেজিস্ট্রেশন পাথটি আপডেট করা হয়েছে
                 navigator.serviceWorker.register('/AmarBangla/service-worker.js')
                     .then(registration => {
                         console.log('সার্ভিস ওয়ার্কার নিবন্ধিত হয়েছে:', registration.scope);
@@ -402,6 +415,7 @@
         const copyButton = document.getElementById('copyButton');
         const copyMessage = document.getElementById('copyMessage');
         const clearButton = document.getElementById('clearButton'); // পরিষ্কার করুন বাটন
+        const installButton = document.getElementById('installButton'); // ইনস্টল বাটন
 
         const apiKeyModal = document.getElementById('apiKeyModal');
         const apiKeyInput = document.getElementById('apiKeyInput');
@@ -409,6 +423,7 @@
         const apiKeyError = document.getElementById('apiKeyError');
 
         let geminiApiKey = localStorage.getItem('geminiApiKey');
+        let deferredPrompt; // beforeinstallprompt ইভেন্ট সংরক্ষণের জন্য
 
         // API কী মডেল দেখানো/লুকানোর ফাংশন
         function showApiKeyModal() {
@@ -423,6 +438,7 @@
 
         // লোড হওয়ার সময় API কী চেক করুন
         window.addEventListener('DOMContentLoaded', () => {
+            // যদি localStorage-এ geminiApiKey না থাকে, তাহলে API Key Modal দেখান
             if (!geminiApiKey) {
                 showApiKeyModal();
             }
@@ -442,6 +458,7 @@
 
         // জেমিনি API কল করার ফাংশন
         async function translateText(text) {
+            // যদি geminiApiKey না থাকে, তাহলে API Key Modal দেখান এবং ফাংশন থেকে বেরিয়ে যান
             if (!geminiApiKey) {
                 showApiKeyModal();
                 translatedText.textContent = "অনুবাদের জন্য API কী প্রয়োজন।";
@@ -453,6 +470,7 @@
             spinner.style.display = 'block';
             translateButton.disabled = true;
             clearButton.disabled = true; // অনুবাদের সময় পরিষ্কার বাটন নিষ্ক্রিয় করুন
+            installButton.disabled = true; // অনুবাদের সময় ইনস্টল বাটন নিষ্ক্রিয় করুন
 
             translatedText.textContent = "অনুবাদ হচ্ছে...";
             copyButton.style.display = 'none'; // অনুবাদের সময় কপি বাটন লুকান
@@ -477,6 +495,12 @@
                 if (!response.ok) {
                     const errorData = await response.json();
                     console.error('API ত্রুটি প্রতিক্রিয়া:', errorData);
+                    // API কী অবৈধ হলে পপ-আপ দেখান
+                    if (response.status === 400 && (errorData.error?.message.includes('API key not valid') || errorData.error?.message.includes('invalid API key'))) {
+                        translatedText.textContent = "ত্রুটি: অবৈধ API কী। অনুগ্রহ করে আবার চেষ্টা করুন।";
+                        showApiKeyModal();
+                        return; // Modal দেখানোর পর ফাংশন থেকে বেরিয়ে যান
+                    }
                     throw new Error(`API কল ব্যর্থ হয়েছে: ${response.status} ${response.statusText} - ${errorData.error?.message || 'অজানা ত্রুটি'}`);
                 }
 
@@ -493,4 +517,143 @@
                     console.error('API প্রতিক্রিয়া থেকে কোনো অনুবাদিত পাঠ্য পাওয়া যায়নি।', result);
                     copyButton.style.display = 'none'; // অনুবাদ ব্যর্থ হলে কপি বাটন লুকানো রাখুন
                 }
-        
+            } catch (error) {
+                console.error('অনুবাদ ত্রুটি:', error);
+                translatedText.textContent = `অনুবাদ ত্রুটি: ${error.message}`;
+                copyButton.style.display = 'none'; // ত্রুটির ক্ষেত্রে কপি বাটন লুকান
+                // যদি API কী সংক্রান্ত ত্রুটি হয়, তাহলে পপ-আপ দেখান
+                if (error.message.includes('API key not valid') || error.message.includes('invalid API key') || error.message.includes('invalid key')) {
+                    showApiKeyModal();
+                }
+            } finally {
+                // লোডিং স্পিনার লুকান এবং বাটনগুলি সক্রিয় করুন
+                buttonText.style.display = 'block';
+                spinner.style.display = 'none';
+                translateButton.disabled = false;
+                clearButton.disabled = false; // অনুবাদের পর পরিষ্কার বাটন সক্রিয় করুন
+                // ইনস্টল বাটন পুনরায় সক্রিয় করুন যদি এটি আগে অদৃশ্য না হয়ে থাকে
+                if (deferredPrompt) { // শুধুমাত্র যদি ইনস্টল প্রম্পট উপলব্ধ থাকে তবেই বাটন দেখান
+                    installButton.style.display = 'flex';
+                } else {
+                    installButton.style.display = 'none'; // যদি ইনস্টল করা থাকে বা উপলব্ধ না হয়
+                }
+            }
+        }
+
+        // অনুবাদ বাটন ক্লিক হ্যান্ডলার
+        translateButton.addEventListener('click', () => {
+            const textToTranslate = inputText.value.trim();
+            if (textToTranslate) {
+                translateText(textToTranslate);
+            } else {
+                translatedText.textContent = "অনুবাদের জন্য কিছু লিখুন...";
+                copyButton.style.display = 'none';
+            }
+        });
+
+        // কপি বাটন ক্লিক হ্যান্ডলার
+        copyButton.addEventListener('click', () => {
+            const textToCopy = translatedText.textContent;
+            if (textToCopy && textToCopy !== 'এখানে অনুবাদিত ফোনেটিক টেক্সট দেখাবে...' && textToCopy !== 'অনুবাদের জন্য কিছু লিখুন...' && !textToCopy.startsWith('অনুবাদ হচ্ছে...')) {
+                // Clipboard API ব্যবহার করুন (যদিও iframe এ সমস্যা হতে পারে, তবু এটি আধুনিক পদ্ধতি)
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        showCopyMessage();
+                    }).catch(err => {
+                        console.error('কপি করতে ব্যর্থ:', err);
+                        fallbackCopyTextToClipboard(textToCopy); // ফলব্যাক ব্যবহার করুন যদি ব্যর্থ হয়
+                    });
+                } else {
+                    // ফলব্যাক পদ্ধতি যদি Clipboard API উপলব্ধ না হয়
+                    fallbackCopyTextToClipboard(textToCopy);
+                }
+            }
+        });
+
+        // ফলব্যাক কপি ফাংশন (পুরাতন ব্রাউজার বা iframe-এর জন্য)
+        function fallbackCopyTextToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            // অফস্ক্রিন রাখুন
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showCopyMessage();
+            } catch (err) {
+                console.error('ফলব্যাক পদ্ধতি ব্যবহার করে কপি করতে ব্যর্থ:', err);
+            }
+            document.body.removeChild(textarea);
+        }
+
+
+        // কপি মেসেজ দেখান
+        function showCopyMessage() {
+            copyMessage.classList.add('show');
+            setTimeout(() => {
+                copyMessage.classList.remove('show');
+            }, 1500); // 1.5 সেকেন্ড পর মেসেজ লুকান
+        }
+
+        // পরিষ্কার বাটন ক্লিক হ্যান্ডলার
+        clearButton.addEventListener('click', () => {
+            inputText.value = ''; // ইনপুট টেক্সট পরিষ্কার করুন
+            translatedText.textContent = 'এখানে অনুবাদিত ফোনেটিক টেক্সট দেখাবে...'; // অনুবাদিত টেক্সট রিসেট করুন
+            copyButton.style.display = 'none'; // কপি বাটন লুকান
+            copyMessage.classList.remove('show'); // যদি দেখানো থাকে, কপি মেসেজ লুকান
+        });
+
+        // এন্টার চাপলে অনুবাদ করার জন্য ইভেন্ট লিসেনার
+        inputText.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // নতুন লাইন যোগ করা থেকে বিরত থাকুন
+                translateButton.click(); // অনুবাদ বাটন ক্লিক করুন
+            }
+        });
+
+        // PWA ইনস্টলেশন লজিক
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // ইনস্টল প্রম্পট ইভেন্টটি সংরক্ষণ করুন
+            deferredPrompt = e;
+            // ইনস্টল বাটন দেখান
+            installButton.style.display = 'flex';
+            console.log('beforeinstallprompt ইভেন্ট ফায়ার হয়েছে। ইনস্টল বাটন এখন দৃশ্যমান।');
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // ইনস্টল বাটন লুকান
+                installButton.style.display = 'none';
+                // ইনস্টল প্রম্পট দেখান
+                deferredPrompt.prompt();
+                // ব্যবহারকারীর প্রতিক্রিয়া পাওয়ার জন্য অপেক্ষা করুন
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`ব্যবহারকারী ইনস্টল প্রম্পট ${outcome} করেছেন।`);
+                // যদি ব্যবহারকারী ইনস্টল করে ফেলে, তাহলে প্রম্পট আর দেখানোর দরকার নেই
+                deferredPrompt = null;
+            }
+        });
+
+        // অ্যাপটি ইনস্টল হয়ে গেলে ইনস্টল বাটন লুকান
+        window.addEventListener('appinstalled', () => {
+            installButton.style.display = 'none';
+            console.log('PWA সফলভাবে ইনস্টল করা হয়েছে!');
+            // ইনস্টল হওয়ার পর স্থানীয় সঞ্চয়স্থান থেকে API Key সরিয়ে দিন
+            // এতে অ্যাপ পুনরায় ইনস্টল করার সময় নতুন API key চাওয়া হবে।
+            localStorage.removeItem('geminiApiKey');
+            geminiApiKey = null; // মেমরি থেকেও সরিয়ে দিন
+
+        });
+
+        // যদি অ্যাপটি standalone মোডে চলে (ইনস্টল করা অ্যাপ হিসেবে), তাহলে ইনস্টল বাটন লুকান
+        // এটি নিশ্চিত করে যে ইনস্টল করা অ্যাপে ইনস্টল বাটন দেখা না যায়
+        if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+            installButton.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
