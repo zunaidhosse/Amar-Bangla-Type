@@ -2,8 +2,8 @@
     "name": "বাংলা থেকে ফোনেটিক ইংলিশ অনুবাদক",
     "short_name": "বাংলা অনুবাদক",
     "description": "বাংলা টেক্সট থেকে ফোনেটিক ইংরেজিতে অনুবাদ করুন।",
-    "start_url": "/AmarBangla/",  <!-- এখানে আপনার রেপোজিটরির নাম যোগ করুন -->
-    "scope": "/AmarBangla/",      <!-- এটিও যোগ করুন, নিশ্চিত করবে অ্যাপটি এই স্কোপের মধ্যে থাকে -->
+    "start_url": "/AmarBangla/",
+    "scope": "/AmarBangla/",
     "display": "standalone",
     "background_color": "#f0f2f5",
     "theme_color": "#3b82f6",
