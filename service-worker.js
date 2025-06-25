@@ -39,8 +39,7 @@ self.addEventListener('fetch', event => {
                     // এটি নেটওয়ার্ক অনুপলব্ধ হলে ক্যাচ করার জন্য
                     console.log('নেটওয়ার্ক অনুরোধ ব্যর্থ হয়েছে, এবং এর জন্য কোনো ক্যাশ ম্যাচ নেই:', event.request.url);
                     // প্রয়োজনে আপনি এখানে একটি নির্দিষ্ট অফলাইন পেজ ফেরত দিতে পারেন
-                    // যদি আপনার একটি offline.html ফাইল থাকে:
-                    // return caches.match('/AmarBangla/offline.html');
+                    // return caches.match('/AmarBangla/offline.html'); // যদি আপনার একটি offline.html ফাইল থাকে
                     return new Response('<h1>আপনি অফলাইনে আছেন!</h1><p>এই অ্যাপটি কাজ করার জন্য ইন্টারনেট সংযোগ প্রয়োজন।</p>', {
                         headers: { 'Content-Type': 'text/html' }
                     });
@@ -64,4 +63,3 @@ self.addEventListener('activate', event => {
         })
     );
 });
-                                                  
