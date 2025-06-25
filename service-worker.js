@@ -1,10 +1,10 @@
 const CACHE_NAME = 'bengali-phonetic-translator-v1';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/icon-192x192.png',
-    '/icon-512x512.png',
+    '/AmarBangla/', // রুট পাথটি রেপোজিটরির নাম সহ নির্দিষ্ট করুন
+    '/AmarBangla/index.html',
+    '/AmarBangla/manifest.json',
+    '/AmarBangla/icon-192x192.png',
+    '/AmarBangla/icon-512x512.png',
     'https://cdn.tailwindcss.com', // Tailwind CSS CDN
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Bengali:wght@300;400;500;600;700&display=swap', // Google Fonts CSS
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css' // Font Awesome CSS
@@ -39,6 +39,8 @@ self.addEventListener('fetch', event => {
                     // এটি নেটওয়ার্ক অনুপলব্ধ হলে ক্যাচ করার জন্য
                     console.log('নেটওয়ার্ক অনুরোধ ব্যর্থ হয়েছে, এবং এর জন্য কোনো ক্যাশ ম্যাচ নেই:', event.request.url);
                     // প্রয়োজনে আপনি এখানে একটি নির্দিষ্ট অফলাইন পেজ ফেরত দিতে পারেন
+                    // যদি আপনার একটি offline.html ফাইল থাকে:
+                    // return caches.match('/AmarBangla/offline.html');
                     return new Response('<h1>আপনি অফলাইনে আছেন!</h1><p>এই অ্যাপটি কাজ করার জন্য ইন্টারনেট সংযোগ প্রয়োজন।</p>', {
                         headers: { 'Content-Type': 'text/html' }
                     });
@@ -62,3 +64,4 @@ self.addEventListener('activate', event => {
         })
     );
 });
+                                                  
